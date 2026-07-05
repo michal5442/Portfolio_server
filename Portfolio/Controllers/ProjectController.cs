@@ -103,7 +103,27 @@ namespace Portfolio.Controllers
     Console.WriteLine("=====================================================");
                 return StatusCode(500, "An unexpected error occurred.");
             }
-        }                                                                                             
+        }       
+        [HttpDelete("deleteProject/{id}")]
+        public async Task<ActionResult<Project>> DeleteProject([FromRoute] string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return BadRequest("Project ID must not be empty.");
+
+            try
+            {
+                var deleted = await _repository.DeleteProject(id);
+
+                if (deleted is null)
+                    return NotFound($"Project with ID '{id}' was not found.");
+
+                return Ok(deleted);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
+        }                                     
     }
 }
 
