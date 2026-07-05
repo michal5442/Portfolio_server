@@ -15,5 +15,7 @@ namespace Portfolio.Repositories
 
         Task<IEnumerable<Project>> GetProjectsByYear(int year);
 
+        Task<Project> DeleteProject(string id);
+
     }
 }

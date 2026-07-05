@@ -58,5 +58,29 @@ namespace Portfolio.Repositories
         {
             return await _collection.Find(p => p.Year == year).ToListAsync();
         }
+
+        public async Task<Project> DeleteProject(string id)
+        {
+            Guid guidId = Guid.Parse(id);
+
+            var update = Builders<Project>.Update
+                .Set(p => p.Active, false)
+                .Set(p => p.UpdatedAt, DateTime.Now);
+
+            var options = new FindOneAndUpdateOptions<Project>
+            {
+                ReturnDocument = ReturnDocument.After
+            };
+
+            var updated = await _collection.FindOneAndUpdateAsync<Project>(
+                p => p.Id == guidId, update, options);
+
+            if (updated == null)
+            {
+                throw new KeyNotFoundException($"Project with ID {id} was not found.");
+            }
+
+            return updated;
+        }
     }
 }
