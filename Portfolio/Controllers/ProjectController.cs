@@ -36,40 +36,25 @@ namespace Portfolio.Controllers
         [HttpPut("updateProject")]
          public async Task<ActionResult<Project>> UpdateProject([FromBody] Project project)
         {    
-            // if (project is null)
-            //     return BadRequest("Request body must not be null.");
+            if (project is null)
+                return BadRequest("Request body must not be null.");
             try
             {
                 var updatedProject = await _repository.UpdateProject(project);
-                if (updatedProject == null)
-                    return NotFound(new { message = $"Failed to update project." });
                 return Ok(updatedProject);
             }
-            catch (Exception ex)
+            catch (KeyNotFoundException ex)
             {
-                return BadRequest(ex);
-            }     
-        } 
-
-        [HttpGet("getProjectById/{id}")]
-        public async Task<ActionResult<Project>> GetProjectById([FromRoute] string id)
-        {
-            if (string.IsNullOrWhiteSpace(id))
-                return BadRequest("Project ID must not be empty.");
- 
-            try
-            {
-                var project = await _repository.GetProjectById(id);
- 
-                if (project is null)
-                    return NotFound($"Project with ID '{id}' was not found.");
- 
-                return Ok(project);
+                return NotFound(ex.Message);
             }
-            catch (Exception ex)
+            catch (ArgumentNullException ex)
             {
-                return StatusCode(500, "An unexpected error occurred.");
+                return BadRequest(ex.Message);
             }
+            catch (Exception)
+            {
+                return StatusCode(500, "Failed to update project.");
+            }    
         } 
 
         [HttpGet("getAllProjects")]
@@ -80,11 +65,35 @@ namespace Portfolio.Controllers
                 var projects = await _repository.GetAllProjects();
                 return Ok(projects);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                return StatusCode(500, ex.ToString());
+                return StatusCode(500, "Failed to retrieve projects.");
             }
         }   
+
+        [HttpGet("getProjectById/{id}")]
+        public async Task<ActionResult<Project>> GetProjectById([FromRoute] string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+                return BadRequest("Project ID must not be empty.");
+
+            if (!Guid.TryParse(id, out _))
+                return BadRequest("Invalid project ID format.");
+ 
+            try
+            {
+                var project = await _repository.GetProjectById(id);
+ 
+                if (project is null)
+                    return NotFound($"Project with ID '{id}' was not found.");
+ 
+                return Ok(project);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, "An unexpected error occurred.");
+            }
+        } 
 
         [HttpGet("getProjectsByYear/{year}")]
         public async Task<ActionResult<IEnumerable<Project>>> GetProjectsByYear([FromRoute] int year)
@@ -92,25 +101,22 @@ namespace Portfolio.Controllers
             try
             {
                 var projects = await _repository.GetProjectsByYear(year);
-
-                if (projects is null)
-                    return NotFound($"Projects for year '{year}' was not found.");
-
                 return Ok(projects);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine("======================= ERROR =======================");
-    Console.WriteLine(ex.ToString());
-    Console.WriteLine("=====================================================");
                 return StatusCode(500, "An unexpected error occurred.");
             }
-        }       
+        } 
+      
         [HttpDelete("deleteProject/{id}")]
         public async Task<ActionResult<Project>> DeleteProject([FromRoute] string id)
         {
             if (string.IsNullOrWhiteSpace(id))
                 return BadRequest("Project ID must not be empty.");
+
+            if (!Guid.TryParse(id, out _))
+                return BadRequest("Invalid project ID format.");
 
             try
             {
@@ -121,7 +127,7 @@ namespace Portfolio.Controllers
 
                 return Ok(deleted);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, "An unexpected error occurred.");
             }

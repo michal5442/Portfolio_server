@@ -19,6 +19,7 @@ namespace Portfolio.Repositories
                 throw new ArgumentNullException(nameof(project));
 
             project.Id = Guid.NewGuid();
+            project.Active = true;
             project.CreatedAt = DateTime.UtcNow;
             project.UpdatedAt = DateTime.UtcNow;
 
@@ -33,6 +34,7 @@ namespace Portfolio.Repositories
                 throw new ArgumentNullException(nameof(project));
 
             project.UpdatedAt = DateTime.UtcNow;
+
             var result = await _collection.ReplaceOneAsync(p => p.Id == project.Id, project);
 
             if (result.MatchedCount == 0)
@@ -65,7 +67,7 @@ namespace Portfolio.Repositories
 
             var update = Builders<Project>.Update
                 .Set(p => p.Active, false)
-                .Set(p => p.UpdatedAt, DateTime.Now);
+                .Set(p => p.UpdatedAt, DateTime.UtcNow);
 
             var options = new FindOneAndUpdateOptions<Project>
             {
@@ -74,11 +76,6 @@ namespace Portfolio.Repositories
 
             var updated = await _collection.FindOneAndUpdateAsync<Project>(
                 p => p.Id == guidId, update, options);
-
-            if (updated == null)
-            {
-                throw new KeyNotFoundException($"Project with ID {id} was not found.");
-            }
 
             return updated;
         }
