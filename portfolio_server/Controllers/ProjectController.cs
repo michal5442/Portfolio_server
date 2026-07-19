@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using portfolio_server.Models;
 using portfolio_server.Interfaces;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
@@ -124,6 +126,21 @@ namespace portfolio_server.Controllers
             return Ok(deleted);
         }
 
+        [HttpPatch("toggleProjectActive/{id:guid}")]
+        public async Task<ActionResult<Project>> ToggleProjectActive([FromRoute] Guid id)
+        {
+            var project = await _repository.ToggleProjectActive(id);
+
+            if (project is null)
+            {
+                _logger.LogWarning("Project not found. ProjectId: {ProjectId}", id);
+                return NotFound($"Project with ID '{id}' was not found.");
+            }
+
+            _logger.LogInformation("Project active status toggled to {Active}. ProjectId: {ProjectId}. PerformedBy: {PerformedBy}", project.Active, id, GetAuditUserIdentity());
+            return Ok(project);
+        }
+
         private string GetAuditUserIdentity()
         {
             var user = HttpContext?.User;
@@ -136,5 +153,3 @@ namespace portfolio_server.Controllers
         }
     }
 }
-
-

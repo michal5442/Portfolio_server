@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using portfolio_server.Models;
@@ -17,6 +18,8 @@ namespace portfolio_server.Interfaces
         Task<IEnumerable<Project>> GetAllProjects();
         
         Task<Project?> DeleteProject(Guid id);
+
+        Task<Project?> ToggleProjectActive(Guid id);
 
         Task<IEnumerable<Project>> CopyProjectsFromPreviousYear(int year);
 

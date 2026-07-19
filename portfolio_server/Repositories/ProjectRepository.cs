@@ -29,7 +29,13 @@ namespace portfolio_server.Repositories
         {
             if (project == null)
                 throw new ArgumentNullException(nameof(project));
-            await PrepareForInsert(project);
+
+            await ValidateReferencesAndSyncNames(project);
+
+            project.Id = Guid.NewGuid();
+            project.Active = true;
+            project.CreatedAt = DateTime.UtcNow;
+            project.UpdatedAt = DateTime.UtcNow;
 
             await _collection.InsertOneAsync(project);
 
@@ -42,16 +48,13 @@ namespace portfolio_server.Repositories
             if (project == null)
                 throw new ArgumentNullException(nameof(project));
 
+            await ValidateReferencesAndSyncNames(project);
+
             project.UpdatedAt = DateTime.UtcNow;
 
             var result = await _collection.ReplaceOneAsync(p => p.Id == project.Id, project);
 
-            if (result.MatchedCount == 0)
-            {
-                return null;
-            }
-
-            return project;
+            return result.MatchedCount == 0 ? null : project;
         }
 
         public async Task<Project?> GetProjectById(Guid id)
@@ -96,47 +99,60 @@ namespace portfolio_server.Repositories
             return copiedProjects;
         }
 
-        public async Task<Project?> DeleteProject(Guid projectId)
+        public async Task<Project?> DeleteProject(Guid id)
         {
-            var project = await _collection.Find(p => p.Id == projectId && p.Active).FirstOrDefaultAsync();
-
+            var project = await _collection.Find(p => p.Id == id && p.Active).FirstOrDefaultAsync();
             if (project == null)
             {
                 return null;
             }
 
-            project.Active = false;
-            project.UpdatedAt = DateTime.UtcNow;
+            return await SaveActiveChange(project, active: false);
+        }
 
-            var result = await _collection.ReplaceOneAsync(
-                p => p.Id == projectId,
-                project);
-
-            if (result.MatchedCount == 0)
+        public async Task<Project?> ToggleProjectActive(Guid id)
+        {
+            var project = await _collection.Find(p => p.Id == id).FirstOrDefaultAsync();
+            if (project == null)
             {
                 return null;
             }
 
-            return project;
-
+            return await SaveActiveChange(project, active: !project.Active);
         }
 
-        private async Task PrepareForInsert(Project project)
+        private async Task<Project?> SaveActiveChange(Project project, bool active)
         {
-            project.Id = Guid.NewGuid();
-            project.Active = true;
-            var agaff = await _agaffRepository.GetAgaffById(project.IdntAgaff);
-            project.AgaffName = agaff?.AgaffName;
-            var tsevet = await _tsevetRepository.GetTsevetMevatseaById(project.IdntTsevetMevatsea);
-            project.TsevetMevatseaName = tsevet?.TsevetMevatseaName;
-            project.CreatedAt = DateTime.UtcNow;
+            project.Active = active;
             project.UpdatedAt = DateTime.UtcNow;
+
+            var result = await _collection.ReplaceOneAsync(p => p.Id == project.Id, project);
+            return result.MatchedCount == 0 ? null : project;
+        }
+
+        private async Task ValidateReferencesAndSyncNames(Project project)
+        {
+            var agaff = await _agaffRepository.GetAgaffById(project.IdntAgaff);
+            if (agaff is null || !agaff.Active)
+            {
+                throw new InvalidOperationException($"Agaff with id {project.IdntAgaff} was not found or is inactive.");
+            }
+
+            var tsevet = await _tsevetRepository.GetTsevetMevatseaById(project.IdntTsevetMevatsea);
+            if (tsevet is null || !tsevet.Active)
+            {
+                throw new InvalidOperationException($"TsevetMevatsea with id {project.IdntTsevetMevatsea} was not found or is inactive.");
+            }
+
+            project.AgaffName = agaff.AgaffName;
+            project.TsevetMevatseaName = tsevet.TsevetMevatseaName;
         }
 
         private async Task<Project> CloneForYear(Project source, int year)
         {
             var clone = new Project
             {
+                Id = Guid.NewGuid(),
                 IdntAgaff = source.IdntAgaff,
                 AgaffName = source.AgaffName,
                 IdntTsevetMevatsea = source.IdntTsevetMevatsea,
@@ -150,10 +166,13 @@ namespace portfolio_server.Repositories
                 TotalTakzivRechesh = source.TotalTakzivRechesh,
                 CoachAdam = source.CoachAdam,
                 Hearot = source.Hearot,
-                Year = year
+                Year = year,
+                Active = true,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
             };
 
-            await PrepareForInsert(clone);
+            await ValidateReferencesAndSyncNames(clone);
 
             return clone;
         }

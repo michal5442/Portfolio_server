@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace portfolio_server.Controllers
 {
     [ApiController]
-    [Route("api/tsevetmevatsea")]
+    [Route("api/[controller]")]
     public class TsevetMevatseaController : ControllerBase
     {
         private readonly ITsevetMevatseaRepository _repository;
@@ -22,9 +22,9 @@ namespace portfolio_server.Controllers
         }
 
         [HttpPost("insertTsevetMevatsea")]
-        public async Task<ActionResult<TsevetMevatsea>> InsertTsevetMevatsea([FromBody] TsevetMevatsea tsevetMevatseaea)
+        public async Task<ActionResult<TsevetMevatsea>> InsertTsevetMevatsea([FromBody] TsevetMevatsea tsevetMevatsea)
         {
-            var insertedTeam = await _repository.InsertTsevetMevatsea(tsevetMevatseaea);
+            var insertedTeam = await _repository.InsertTsevetMevatsea(tsevetMevatsea);
             _logger.LogInformation("Inserted new tsevet mevatsea with IdntTsevetMevatsea: {TeamId}", insertedTeam.IdntTsevetMevatsea);
             return CreatedAtAction(nameof(GetTsevetMevatseaById), new { id = insertedTeam.IdntTsevetMevatsea }, insertedTeam);
         }
@@ -49,38 +49,38 @@ namespace portfolio_server.Controllers
             return Ok(team);
         }
 
-        [HttpPut("updateTsevetMevatseaea/{id:guid}")]
-        public async Task<ActionResult> UpdateTsevetMevatsea([FromRoute] Guid id, [FromBody] TsevetMevatsea tsevetMevatseaea)
+        [HttpPut("updateTsevetMevatsea/{id:guid}")]
+        public async Task<ActionResult<TsevetMevatsea>> UpdateTsevetMevatsea([FromRoute] Guid id, [FromBody] TsevetMevatsea tsevetMevatsea)
         {
-            if (tsevetMevatseaea is null)
+            if (tsevetMevatsea is null)
             {
                 _logger.LogWarning("TsevetMevatsea update attempted with null data for id: {TeamId}", id);
                 return BadRequest("TsevetMevatsea data is required.");
             }
 
-            var updated = await _repository.UpdateTsevetMevatsea(id, tsevetMevatseaea);
-            if (!updated)
+            var updated = await _repository.UpdateTsevetMevatsea(id, tsevetMevatsea);
+            if (updated is null)
             {
                 _logger.LogWarning("Failed to update TsevetMevatsea. IdntTsevetMevatsea: {TeamId}", id);
                 return NotFound($"TsevetMevatsea with id {id} was not found or update failed.");
             }
 
             _logger.LogInformation("TsevetMevatsea updated successfully. IdntTsevetMevatsea: {TeamId}", id);
-            return Ok("TsevetMevatsea updated successfully.");
+            return Ok(updated);
         }
 
-        [HttpDelete("deleteTsevetMevatsea/{id:guid}")]
-        public async Task<ActionResult> DeleteTsevetMevatsea([FromRoute] Guid id)
+        [HttpPatch("toggleTsevetMevatseaActive/{id:guid}")]
+        public async Task<ActionResult<TsevetMevatsea>> ToggleTsevetMevatseaActive([FromRoute] Guid id)
         {
-            var deleted = await _repository.DeleteTsevetMevatsea(id);
-            if (!deleted)
+            var team = await _repository.ToggleTsevetMevatseaActive(id);
+            if (team is null)
             {
-                _logger.LogWarning("Failed to deactivate TsevetMevatsea. IdntTsevetMevatsea: {TeamId}", id);
+                _logger.LogWarning("Failed to toggle TsevetMevatsea active status. IdntTsevetMevatsea: {TeamId}", id);
                 return NotFound($"TsevetMevatsea with id {id} was not found.");
             }
 
-            _logger.LogInformation("TsevetMevatsea deactivated successfully. IdntTsevetMevatsea: {TeamId}", id);
-            return Ok("TsevetMevatsea deactivated successfully.");
+            _logger.LogInformation("TsevetMevatsea active status toggled to {Active}. IdntTsevetMevatsea: {TeamId}", team.Active, id);
+            return Ok(team);
         }
     }
 }

@@ -17,16 +17,16 @@ namespace portfolio_server.Models
 
         public string? AgaffName { get; set; } 
 
-        [MongoDB.Bson.Serialization.Attributes.BsonIgnore]
-        public Agaff? Agaff { get; set; }
+        // [MongoDB.Bson.Serialization.Attributes.BsonIgnore]
+        // public Agaff? Agaff { get; set; }
 
         [BsonRepresentation(BsonType.String)]
         public Guid IdntTsevetMevatsea { get; set; }
 
         public string? TsevetMevatseaName { get; set; }
 
-        [MongoDB.Bson.Serialization.Attributes.BsonIgnore]
-        public TsevetMevatsea? TsevetMevatsea { get; set; }
+        // [MongoDB.Bson.Serialization.Attributes.BsonIgnore]
+        // public TsevetMevatsea? TsevetMevatsea { get; set; }
 
         public string ProjectName { get; set; }
 

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 namespace portfolio_server.Controllers
 {
     [ApiController]
-    [Route("api/agaff")]
+    [Route("api/[controller]")]
     public class AgaffController : ControllerBase
     {
         private readonly IAgaffRepository _repository;
@@ -50,7 +50,7 @@ namespace portfolio_server.Controllers
         }
 
         [HttpPut("updateAgaff/{id:guid}")]
-        public async Task<ActionResult> UpdateAgaff([FromRoute] Guid id, [FromBody] Agaff agaff)
+        public async Task<ActionResult<Agaff>> UpdateAgaff([FromRoute] Guid id, [FromBody] Agaff agaff)
         {
             if (agaff is null)
             {
@@ -59,42 +59,29 @@ namespace portfolio_server.Controllers
             }
 
             var updated = await _repository.UpdateAgaff(id, agaff);
-            if (!updated)
+            if (updated is null)
             {
                 _logger.LogWarning("Failed to update agaff. IdntAgaff: {AgaffId}", id);
                 return NotFound($"Agaff with id {id} was not found or update failed.");
             }
 
             _logger.LogInformation("Agaff updated successfully. IdntAgaff: {AgaffId}", id);
-            return Ok("Agaff updated successfully.");
-        }
-
-        [HttpDelete("deleteAgaff/{id:guid}")]
-        public async Task<ActionResult> DeleteAgaff([FromRoute] Guid id)
-        {
-            var deleted = await _repository.DeleteAgaff(id);
-            if (!deleted)
-            {
-                _logger.LogWarning("Failed to deactivate agaff. IdntAgaff: {AgaffId}", id);
-                return NotFound($"Agaff with id {id} was not found.");
-            }
-
-            _logger.LogInformation("Agaff deactivated successfully. IdntAgaff: {AgaffId}", id);
-            return Ok("Agaff deactivated successfully.");
+            return Ok(updated);
         }
 
         [HttpPatch("toggleAgaffActive/{id:guid}")]
-        public async Task<ActionResult> ToggleAgaffActive([FromRoute] Guid id)
+        public async Task<ActionResult<Agaff>> ToggleAgaffActive([FromRoute] Guid id)
         {
-            var toggled = await _repository.ToggleAgaffActiveStatus(id);
-            if (!toggled)
+            var agaff = await _repository.ToggleAgaffActive(id);
+            if (agaff is null)
             {
-                _logger.LogWarning("Failed to toggle agaff active state. IdntAgaff: {AgaffId}", id);
+                _logger.LogWarning("Failed to toggle agaff active status. IdntAgaff: {AgaffId}", id);
                 return NotFound($"Agaff with id {id} was not found.");
             }
 
-            _logger.LogInformation("Agaff active state toggled successfully. IdntAgaff: {AgaffId}", id);
-            return Ok("Agaff active status toggled successfully.");
+            _logger.LogInformation("Agaff active status toggled to {Active}. IdntAgaff: {AgaffId}", agaff.Active, id);
+            return Ok(agaff);
         }
+
     }
 }
