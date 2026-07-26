@@ -26,6 +26,11 @@ namespace portfolio_server.Middleware
                 {
                     await _next(context);
                 }
+                catch (InvalidOperationException ex)
+                {
+                    _logger.LogWarning(ex, "Validation failure occurred while processing request. CorrelationId: {CorrelationId}", correlationId);
+                    await HandleValidationExceptionAsync(context, ex, correlationId); 
+                }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Unhandled exception occurred while processing request. CorrelationId: {CorrelationId}", correlationId);
@@ -59,6 +64,22 @@ namespace portfolio_server.Middleware
             context.Response.Headers[CorrelationIdMiddleware.HeaderName] = correlationId;
 
             var payload = JsonSerializer.Serialize(new { error = "An unexpected error occurred." });
+            return context.Response.WriteAsync(payload);
+        }
+
+        private static Task HandleValidationExceptionAsync(HttpContext context, InvalidOperationException ex, string correlationId)
+        {
+            if (context.Response.HasStarted)
+            {
+                return Task.CompletedTask;
+            }
+
+            context.Response.Clear();
+            context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            context.Response.ContentType = "application/json";
+            context.Response.Headers[CorrelationIdMiddleware.HeaderName] = correlationId;
+
+            var payload = JsonSerializer.Serialize(new { error = ex.Message });
             return context.Response.WriteAsync(payload);
         }
     }
